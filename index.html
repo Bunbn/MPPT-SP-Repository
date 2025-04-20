@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Inverter Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #00ffe1;
+        }
+        canvas {
+            max-width: 1000px;
+            margin: 20px auto;
+            display: block;
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 Live Inverter Dashboard</h1>
+    <canvas id="liveChart"></canvas>
+
+    <script>
+        const ctx = document.getElementById('liveChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Voltage (V)',
+                        data: [],
+                        borderColor: '#00ffe1',
+                        backgroundColor: '#00ffe144',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.3,
+                    },
+                    {
+                        label: 'Current (A)',
+                        data: [],
+                        borderColor: '#ff6384',
+                        backgroundColor: '#ff638444',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.3,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: { color: '#fff' }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#ccc' },
+                        title: {
+                            display: true,
+                            text: 'Time',
+                            color: '#ccc'
+                        }
+                    },
+                    y: {
+                        ticks: { color: '#ccc' },
+                        title: {
+                            display: true,
+                            text: 'Values',
+                            color: '#ccc'
+                        }
+                    }
+                }
+            }
+        });
+
+        async function fetchData() {
+            try {
+                const response = await fetch('data.json');
+                const data = await response.json();
+
+                const timestamps = data.map(entry => entry.timestamp);
+                const voltages = data.map(entry => parseFloat(entry.voltage));
+                const currents = data.map(entry => parseFloat(entry.current));
+
+                chart.data.labels = timestamps;
+                chart.data.datasets[0].data = voltages;
+                chart.data.datasets[1].data = currents;
+                chart.update();
+            } catch (err) {
+                console.error('Error fetching data:', err);
+            }
+        }
+
+        fetchData();
+        setInterval(fetchData, 3000); // auto-refresh every 3s
+    </script>
+</body>
+</html>
