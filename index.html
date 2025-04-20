@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Live Inverter Dashboard</title>
+    <title>Inverter Monitoring Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             background-color: #121212;
@@ -12,13 +11,22 @@
             margin: 0;
             padding: 20px;
         }
+
         h1 {
             text-align: center;
             color: #00ffe1;
         }
+
+        #duty-cycle {
+            font-size: 1.5em;
+            color: #ffdd57;
+            text-align: center;
+            margin-top: 10px;
+        }
+
         canvas {
             max-width: 1000px;
-            margin: 20px auto;
+            margin: 40px auto;
             display: block;
             background-color: #1e1e1e;
             border: 1px solid #333;
@@ -28,60 +36,80 @@
     </style>
 </head>
 <body>
-    <h1>🔌 Live Inverter Dashboard</h1>
-    <canvas id="liveChart"></canvas>
+    <h1>🔌 Inverter Monitoring Dashboard</h1>
+    <div id="duty-cycle">Duty Cycle: --%</div>
+
+    <canvas id="inputChart"></canvas>
+    <canvas id="outputChart"></canvas>
 
     <script>
-        const ctx = document.getElementById('liveChart').getContext('2d');
-        const chart = new Chart(ctx, {
+        const inputCtx = document.getElementById('inputChart').getContext('2d');
+        const outputCtx = document.getElementById('outputChart').getContext('2d');
+
+        const inputChart = new Chart(inputCtx, {
             type: 'line',
             data: {
                 labels: [],
                 datasets: [
                     {
-                        label: 'Voltage (V)',
+                        label: 'Input Voltage (V)',
                         data: [],
-                        borderColor: '#00ffe1',
-                        backgroundColor: '#00ffe144',
+                        borderColor: '#00bfff',
                         borderWidth: 2,
                         fill: false,
-                        tension: 0.3,
+                        tension: 0.3
                     },
                     {
-                        label: 'Current (A)',
+                        label: 'Input Current (A)',
                         data: [],
                         borderColor: '#ff6384',
-                        backgroundColor: '#ff638444',
                         borderWidth: 2,
                         fill: false,
-                        tension: 0.3,
+                        tension: 0.3
                     }
                 ]
             },
             options: {
-                responsive: true,
                 plugins: {
-                    legend: {
-                        labels: { color: '#fff' }
-                    }
+                    legend: { labels: { color: '#fff' } }
                 },
                 scales: {
-                    x: {
-                        ticks: { color: '#ccc' },
-                        title: {
-                            display: true,
-                            text: 'Time',
-                            color: '#ccc'
-                        }
+                    x: { ticks: { color: '#ccc' }, title: { display: true, text: 'Time', color: '#ccc' }},
+                    y: { ticks: { color: '#ccc' }, title: { display: true, text: 'Input Values', color: '#ccc' }}
+                }
+            }
+        });
+
+        const outputChart = new Chart(outputCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Output Voltage (V)',
+                        data: [],
+                        borderColor: '#00ff7f',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.3
                     },
-                    y: {
-                        ticks: { color: '#ccc' },
-                        title: {
-                            display: true,
-                            text: 'Values',
-                            color: '#ccc'
-                        }
+                    {
+                        label: 'Output Current (A)',
+                        data: [],
+                        borderColor: '#ffa500',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.3
                     }
+                ]
+            },
+            options: {
+                plugins: {
+                    legend: { labels: { color: '#fff' } }
+                },
+                scales: {
+                    x: { ticks: { color: '#ccc' }, title: { display: true, text: 'Time', color: '#ccc' }},
+                    y: { ticks: { color: '#ccc' }, title: { display: true, text: 'Output Values', color: '#ccc' }}
                 }
             }
         });
@@ -91,21 +119,31 @@
                 const response = await fetch('data.json');
                 const data = await response.json();
 
-                const timestamps = data.map(entry => entry.timestamp);
-                const voltages = data.map(entry => parseFloat(entry.voltage));
-                const currents = data.map(entry => parseFloat(entry.current));
+                const timestamps = data.map(e => e.timestamp);
+                const vin = data.map(e => parseFloat(e.vin));
+                const iin = data.map(e => parseFloat(e.iin));
+                const vout = data.map(e => parseFloat(e.vout));
+                const iout = data.map(e => parseFloat(e.iout));
+                const duty = data[data.length - 1].duty;
 
-                chart.data.labels = timestamps;
-                chart.data.datasets[0].data = voltages;
-                chart.data.datasets[1].data = currents;
-                chart.update();
+                document.getElementById("duty-cycle").innerText = `Duty Cycle: ${duty}%`;
+
+                inputChart.data.labels = timestamps;
+                inputChart.data.datasets[0].data = vin;
+                inputChart.data.datasets[1].data = iin;
+                inputChart.update();
+
+                outputChart.data.labels = timestamps;
+                outputChart.data.datasets[0].data = vout;
+                outputChart.data.datasets[1].data = iout;
+                outputChart.update();
             } catch (err) {
-                console.error('Error fetching data:', err);
+                console.error("Error fetching or parsing data:", err);
             }
         }
 
         fetchData();
-        setInterval(fetchData, 3000); // auto-refresh every 3s
+        setInterval(fetchData, 3000); // Update every 3 seconds
     </script>
 </body>
 </html>
