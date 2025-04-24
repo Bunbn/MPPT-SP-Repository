@@ -1,12 +1,350 @@
 [
     {
-        "timestamp": "2025-04-20T12:00:00",
-        "voltage": "12.5",
-        "current": "3.2"
+        "timestamp": "2025-04-23T17:12:25.692115",
+        "tage": "0"
     },
     {
-        "timestamp": "2025-04-20T12:00:03",
-        "voltage": "12.4",
-        "current": "3.1"
+        "timestamp": "2025-04-23T17:12:25.788035",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "-85",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "73"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:25.883998",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "12",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-12"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:25.995688",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "-97",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-73"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:26.091590",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "-122",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-134"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:26.187482",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "12",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-36"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:26.299333",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "146",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-73"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:26.395123",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "36",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "97"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:26.491016",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "97",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-85"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:26.586892",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "73",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-109"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:26.698652",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "97",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-48"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:26.794560",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "-36",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-85"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:26.890432",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "48",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "170"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:27.002425",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "-48",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "122"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:27.098085",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "-73",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-48"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:27.193979",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "85",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-61"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:27.289860",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "48",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "36"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:27.401620",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "-97",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "0"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:27.497487",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "158",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "0"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:27.593365",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "24",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "12"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:27.689246",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "0",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-85"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:27.785149",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "73",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-12"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:27.896902",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "-48",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-12"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:27.992778",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "-73",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-12"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:28.088662",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "48",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-12"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:28.184539",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "-61",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "12"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:28.296283",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "-61",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "0"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:28.392161",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "109",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "48"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:28.488049",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "36",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-12"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:28.583918",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "97",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "24"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:28.679794",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "97",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "36"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:28.791985",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "73",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-73"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:28.887492",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "-73",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-61"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:28.983340",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "61",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-36"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:29.095224",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "36",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-97"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:29.190974",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "48",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-61"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:29.286864",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "-12",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-24"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:29.382746",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "24",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "85"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:29.478623",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "97",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "48"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:29.590454",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "12",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "24"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:29.686270",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "73",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-61"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:29.782132",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "24",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-48"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:29.878012",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "61",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "-36"
+    },
+    {
+        "timestamp": "2025-04-23T17:12:29.989763",
+        "DutyCycle": "1014",
+        "LowSideVoltage": "0",
+        "LowSideCurrent": "-36",
+        "HighSideVoltage": "0",
+        "HighSideCurrent": "85"
     }
 ]
