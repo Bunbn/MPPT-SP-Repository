@@ -1,0 +1,194 @@
+/*
+  Voltage-targeting Buck Converter
+  Created: 4/21/2025
+  By: Alex Aarnio
+
+  Code adapted from:
+    "Output Voltage Controller for Buck Converter"
+    Created: 1/25/2023
+    By: Elijah Gordon and Joshua Hutchinson
+
+  IC algorithm based on:
+    https://www.sciencedirect.com/science/article/pii/S1364032116305706
+*/
+
+#include <Arduino.h>
+#include <AtverterE.h>
+
+#define INTERRUPT_TIME 1
+#define DUTY_CYCLE_INCREMENT 20
+
+AtverterE atverterE;
+int ledState = HIGH;
+
+// Variables for buck control
+uint16_t dutyCycle;
+int32_t desiredLowVoltage; // Target Output Voltage
+int32_t actualHighVoltage; // Input Voltage
+int32_t actualLowVoltage;  // Actual Output Voltage
+
+double integralControl = 0.0;
+int32_t prevVoltageError = 0;
+
+// Control gain variables
+const double kp = 0.3;  // Proportional Control: kp * error
+const double ki = 0.05; // Integral Control: summation of (ki * error * sample_time)
+const double kd = 0.0;  // Derivative Control:
+
+// Variables for IC (incremental conductance) algorithm
+int32_t actualLowCurrent;
+int32_t prevActualLowVoltage = 1;
+int32_t prevActualLowCurrent = 1;
+int32_t dV;
+int32_t dI;
+
+// Voltage sensor calibration
+const double VL_scale = 1.03;
+const double VL_offset = 36;
+const double VH_scale = 1;
+const double VH_offset = 0;
+
+// Function prototypes
+void setup();
+void controlUpdate();
+void transmitData();
+int32_t getCalibratedVH();
+int32_t getCalibratedVL();
+
+void setup(void)
+{
+  desiredLowVoltage = 8000; // Desired output voltage eventually find a way to get this value from the user
+  actualHighVoltage = getCalibratedVH();
+
+  atverterE.setupPinMode();       // Get pins setup
+  atverterE.initializePWMTimer(); // Setup Timers
+
+  atverterE.initializeInterruptTimer(INTERRUPT_TIME, &controlUpdate); // Get interrupts enabled
+  Serial.begin(9600);
+
+  dutyCycle = (desiredLowVoltage * 1024) / actualHighVoltage;
+  // dutyCycle = 100;
+  atverterE.setDutyCycle(dutyCycle);
+  atverterE.startPWM();
+}
+
+void loop(void)
+{
+}
+
+void controlUpdate(void)
+{
+  // Perform voltage control
+  // -----------------------------------------------------------------------------------------------------------------------------------
+
+  // Read voltage on low side and adjust based on calibration parameters
+  actualLowVoltage = getCalibratedVL();
+
+  int32_t voltageError = actualLowVoltage - desiredLowVoltage; // Instantaneous error of the desired output versus actual output voltage
+  // Serial.print("Voltage Error: ");
+  // Serial.print(voltageError);
+  // Serial.print("\n\n");
+
+  // Allows for us to convert from voltage error to dutycycle error
+  // Negative sign used since boost converter is inversely proportional to dutycycle
+  double proportionalControl = -(kp * ((double)voltageError / (double)actualLowVoltage)); // Proportional control: -kp * percent error
+  // Serial.print("Proportional Control: ");
+  // Serial.print(proportionalControl);
+  // Serial.print("\n\n");
+
+  integralControl += -(ki * ((double)voltageError / (double)actualLowVoltage)); // Integral control: -ki * (dutycycle) * percent error * sample_time
+  // Serial.print("Integral Control: ");
+  // Serial.print(integralControl);
+  // Serial.print("\n\n");
+
+  // double derivativeControl = (kd * ((double)(voltageError - prevVoltageError) / (double)INTERRUPT_TIME));  // Derivative control: -kd * (error - prev_error) / sample_time
+  // derivativeControl = constrain(derivativeControl, -0.5, 0.5);
+  //  Serial.print("Derivative Control: ");
+  //  Serial.print(derivativeControl);
+  //  Serial.print("\n\n");
+
+  // prevVoltageError = voltageError;
+
+  // Serial.print("Previous dutyCycle: ");
+  // Serial.print(dutyCycle);
+  // Serial.print("\n\n");
+  dutyCycle += (double)dutyCycle * (proportionalControl + integralControl /* + derivativeControl*/);
+  // Serial.print("New dutyCycle: ");
+  // Serial.print(dutyCycle);
+  // Serial.print("\n\n");
+
+  dutyCycle = constrain(dutyCycle, 10, 1014);
+  // Serial.print("Constrained new dutyCycle: ");
+  // Serial.print(dutyCycle);
+  // Serial.print("\n\n");
+
+  atverterE.setDutyCycle(dutyCycle);
+
+  transmitData(); // send relevent data over UART
+
+  // toggle LED to show control loop is running
+  atverterE.setLED(LED1G_PIN, ledState);
+  ledState = !ledState;
+
+  // Perform IC operations
+  // -----------------------------------------------------------------------------------------------------------------------------------
+  actualLowCurrent = atverterE.getIL();
+  dV = actualLowVoltage - prevActualLowVoltage;
+  dI = actualLowCurrent - prevActualLowCurrent;
+
+  // replace all if statements with ranges to account for noise
+  // current sensors have ~ 200-400 mA (peak-peak) of noise
+
+  if(dV == 0) {   
+    if(dI > 0) {
+      dutyCycle += DUTY_CYCLE_INCREMENT;    // inc. duty cycle
+    }
+    else if(dI < 0) {
+      dutyCycle += -DUTY_CYCLE_INCREMENT;   // dec. duty cycle
+    }
+    else {
+      dutyCycle += 0; // no change
+    }
+  }
+  else {
+    if((dI/dV > -actualLowCurrent/actualLowVoltage)) {
+      dutyCycle += DUTY_CYCLE_INCREMENT;
+    }
+    else {
+      // ...
+    }
+  }
+
+  prevActualLowVoltage = actualLowVoltage;
+  prevActualLowCurrent = actualLowCurrent;
+}
+
+void transmitData()
+{
+  Serial.print("LowSideVoltage: ");
+  Serial.print(getCalibratedVL());
+  Serial.print("\t");
+
+  Serial.print("LowSideCurrent: ");
+  Serial.print(atverterE.getIL());
+  Serial.print("\t");
+
+  Serial.print("HighSideVoltage: ");
+  Serial.print(getCalibratedVH());
+  Serial.print("\t");
+
+  Serial.print("HighSideCurrent: ");
+  Serial.print(atverterE.getIH());
+  Serial.print("\t");
+  Serial.print("\r\n");
+}
+
+int32_t getCalibratedVH()
+{
+  return (int32_t)(((double)atverterE.getActualVH() * VH_scale) + VH_offset);
+}
+
+int32_t getCalibratedVL()
+{
+  return (int32_t)(((double)atverterE.getActualVL() * VL_scale) + VL_offset);
+}
