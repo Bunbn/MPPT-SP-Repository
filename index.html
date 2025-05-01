@@ -2,6 +2,73 @@
 <html>
 <head>
     <title>Inverter Monitoring Dashboard</title>
+    <
+    script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #00ffe1;
+        }
+
+        #duty-cycle {
+            font-size: 1.5em;
+            color: #ffdd57;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        canvas {
+            width: 900px;
+            max-width: 90%;
+            height: 400px;
+            margin: 40px auto;
+            display: block;
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        button {
+            background-color: #00ffe1;
+            color: #121212;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #00ccbb;
+        }
+    </style>
+</head>
+<body>
+    <h1>Inverter Monitoring Dashboard</h1>
+    <div id="duty-cycle">Duty Cycle: --%</div>
+    <div style="text-align: center; margin-top: 20px;">
+        <button onclick="refreshData()">Refresh Now</button>
+        <button onclick="toggleCharts()">Toggle Charts</button>
+        <button onclick="clearGraphs()">Clear Graphs</button>
+    </div>
+    <canvas id="lowSideChart"></canvas>
+    <canvas id="highSideChart"></canvas>
+
+    <!DOCTYPE html>
+<html>
+<head>
+    <title>Inverter Monitoring Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -79,7 +146,8 @@
                         borderColor: '#1e90ff',
                         borderWidth: 2,
                         fill: false,
-                        tension: 0.3
+                        tension: 0.3,
+                        pointRadius: 0
                     },
                     {
                         label: 'Low Side Current (A)',
@@ -87,7 +155,8 @@
                         borderColor: '#ff6347',
                         borderWidth: 2,
                         fill: false,
-                        tension: 0.3
+                        tension: 0.3,
+                        pointRadius: 0
                     }
                 ]
             },
@@ -97,9 +166,12 @@
                 },
                 scales: {
                     x: {
-                        ticks: { color: '#ccc' },
+                        ticks: { color: '#ccc', callback: function () {
+                        return ''; //hide ticks
+                        	}
+                        },
                         title: { display: true, text: 'Time', color: '#ccc' }
-                    },
+                    }
                     y: {
                         ticks: { color: '#ccc' },
                         title: { display: true, text: 'Low Side Values', color: '#ccc' }
@@ -119,7 +191,8 @@
                         borderColor: '#00fa9a',
                         borderWidth: 2,
                         fill: false,
-                        tension: 0.3
+                        tension: 0.3,
+                        pointRadius: 0
                     },
                     {
                         label: 'High Side Current (A)',
@@ -127,7 +200,8 @@
                         borderColor: '#ffa500',
                         borderWidth: 2,
                         fill: false,
-                        tension: 0.3
+                        tension: 0.3,
+                        pointRadius: 0
                     }
                 ]
             },
@@ -137,9 +211,12 @@
                 },
                 scales: {
                     x: {
-                        ticks: { color: '#ccc' },
-                        title: { display: true, text: 'Time', color: '#ccc' }
-                    },
+                        ticks: { color: '#ccc', callback: function () {
+                        return ''; //hide ticks
+                        	}
+                        },
+                    	title: { display: true, text: 'Time', color: '#ccc' }
+                    }
                     y: {
                         ticks: { color: '#ccc' },
                         title: { display: true, text: 'High Side Values', color: '#ccc' }
