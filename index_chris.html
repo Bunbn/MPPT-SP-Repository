@@ -5,17 +5,9 @@
   <title>Inverter Voltage Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    :root {
-      --bg-color: #121212;
-      --text-color: #ffffff;
-      --accent-color: #00ffe1;
-      --card-bg: #1e1e1e;
-      --button-hover: #00ccbb;
-    }
-
     body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
+      background-color: #121212;
+      color: #ffffff;
       font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 20px;
@@ -23,7 +15,7 @@
 
     h1 {
       text-align: center;
-      color: var(--accent-color);
+      color: #00ffe1;
     }
 
     #duty-cycle {
@@ -39,15 +31,15 @@
       height: 400px;
       margin: 40px auto;
       display: block;
-      background-color: var(--card-bg);
+      background-color: #1e1e1e;
       border: 1px solid #333;
       border-radius: 8px;
       padding: 10px;
     }
 
     button {
-      background-color: var(--accent-color);
-      color: var(--bg-color);
+      background-color: #00ffe1;
+      color: #121212;
       border: none;
       padding: 10px 20px;
       margin: 5px;
@@ -58,7 +50,7 @@
     }
 
     button:hover {
-      background-color: var(--button-hover);
+      background-color: #00ccbb;
     }
   </style>
 </head>
@@ -79,6 +71,8 @@
     const outputCtx = document.getElementById('outputChart').getContext('2d');
 
     const maxPoints = 120;
+    let lastTimestamp = null;
+    let autoUpdateInterval = null;
 
     const inputChart = new Chart(inputCtx, {
       type: 'line',
@@ -109,8 +103,15 @@
         },
         scales: {
           x: {
-            ticks: { color: '#ccc' },
-            title: { display: true, text: 'Time', color: '#ccc' }
+            ticks: {
+              color: '#ccc',
+              callback: () => ''
+            },
+            title: {
+              display: true,
+              text: 'Time',
+              color: '#ccc'
+            }
           },
           y: {
             type: 'linear',
@@ -158,8 +159,15 @@
         },
         scales: {
           x: {
-            ticks: { color: '#ccc' },
-            title: { display: true, text: 'Time', color: '#ccc' }
+            ticks: {
+              color: '#ccc',
+              callback: () => ''
+            },
+            title: {
+              display: true,
+              text: 'Time',
+              color: '#ccc'
+            }
           },
           y: {
             type: 'linear',
@@ -178,6 +186,33 @@
       }
     });
 
+    async function fetchData() {
+      try {
+        const response = await fetch('data.json', { cache: "no-store" });
+        const rawData = await response.json();
+
+        const latest = rawData[rawData.length - 1];
+
+        if (!latest || latest.timestamp === lastTimestamp) return; // Skip if no new data
+        lastTimestamp = latest.timestamp;
+
+        const time = new Date(latest.timestamp).toLocaleTimeString();
+        const lowVoltage = parseFloat(latest.LowSideVoltage) / 1000;
+        const lowCurrent = parseFloat(latest.LowSideCurrent);
+        const highVoltage = parseFloat(latest.HighSideVoltage) / 1000;
+        const highCurrent = parseFloat(latest.HighSideCurrent);
+        const duty = latest.DutyCycle;
+
+        document.getElementById("duty-cycle").innerText = `Duty Cycle: ${duty}`;
+
+        updateChart(inputChart, time, lowVoltage, lowCurrent);
+        updateChart(outputChart, time, highVoltage, highCurrent);
+
+      } catch (err) {
+        console.error("Error fetching or parsing data:", err);
+      }
+    }
+
     function updateChart(chart, time, voltage, current) {
       chart.data.labels.push(time);
       chart.data.datasets[0].data.push(voltage);
@@ -192,56 +227,35 @@
       chart.update();
     }
 
-    async function fetchData() {
-      try {
-        const response = await fetch('data.json');
-        const rawData = await response.json();
-
-        const latest = rawData[rawData.length - 1];
-        const time = new Date(latest.timestamp).toLocaleTimeString();
-
-        const lowVoltage = parseFloat(latest.LowSideVoltage) / 1000;
-        const lowCurrent = parseFloat(latest.LowSideCurrent);
-        const highVoltage = parseFloat(latest.HighSideVoltage) / 1000;
-        const highCurrent = parseFloat(latest.HighSideCurrent);
-        const duty = latest.DutyCycle;
-
-        document.getElementById("duty-cycle").innerText = `Duty Cycle: ${duty}`;
-
-        updateChart(inputChart, time, lowVoltage, lowCurrent);
-        updateChart(outputChart, time, highVoltage, highCurrent);
-      } catch (err) {
-        console.error("Error fetching or parsing data:", err);
-      }
-    }
-
     function refreshData() {
       fetchData();
-      if (window.autoUpdateInterval) clearInterval(window.autoUpdateInterval);
-      window.autoUpdateInterval = setInterval(fetchData, 500);
+      if (autoUpdateInterval) clearInterval(autoUpdateInterval);
+      autoUpdateInterval = setInterval(fetchData, 500);
     }
 
     function clearGraphs() {
-      if (window.autoUpdateInterval) clearInterval(window.autoUpdateInterval);
+      if (autoUpdateInterval) clearInterval(autoUpdateInterval);
 
-      [inputChart, outputChart].forEach(chart => {
-        chart.data.labels = [];
-        chart.data.datasets.forEach(ds => ds.data = []);
-        chart.update();
-      });
+      inputChart.data.labels = [];
+      inputChart.data.datasets.forEach(ds => ds.data = []);
+      inputChart.update();
+
+      outputChart.data.labels = [];
+      outputChart.data.datasets.forEach(ds => ds.data = []);
+      outputChart.update();
 
       document.getElementById("duty-cycle").innerText = "Duty Cycle: --%";
+      lastTimestamp = null;
     }
 
+    let chartsVisible = true;
     function toggleCharts() {
-      const inputCanvas = document.getElementById('inputChart');
-      const outputCanvas = document.getElementById('outputChart');
-      const visible = inputCanvas.style.display !== 'none';
-      inputCanvas.style.display = visible ? 'none' : 'block';
-      outputCanvas.style.display = visible ? 'none' : 'block';
+      chartsVisible = !chartsVisible;
+      document.getElementById('inputChart').style.display = chartsVisible ? 'block' : 'none';
+      document.getElementById('outputChart').style.display = chartsVisible ? 'block' : 'none';
     }
 
-    // Start updating on page load
+    // Start auto-updating
     refreshData();
   </script>
 </body>
