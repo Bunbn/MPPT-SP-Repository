@@ -1,256 +1,312 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Inverter Voltage Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: 'Segoe UI', sans-serif;
-            margin: 0;
-            padding: 20px;
-        }
+  <meta charset="UTF-8" />
+  <title>Inverter Voltage Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-color: #121212;
+      --text-color: #ffffff;
+      --accent-color: #00ffe1;
+      --card-bg: #1e1e1e;
+      --button-hover: #00ccbb;
+    }
 
-        h1 {
-            text-align: center;
-            color: #00ffe1;
-        }
+    [data-theme="light"] {
+      --bg-color: #f5f5f5;
+      --text-color: #111;
+      --accent-color: #007bff;
+      --card-bg: #ffffff;
+      --button-hover: #0056b3;
+    }
 
-        #duty-cycle {
-            font-size: 1.5em;
-            color: #ffdd57;
-            text-align: center;
-            margin-top: 10px;
-        }
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
 
-        canvas {
-            width: 900px;
-            max-width: 90%;
-            height: 400px;
-            margin: 40px auto;
-            display: block;
-            background-color: #1e1e1e;
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 10px;
-        }
+    h1 {
+      text-align: center;
+      color: var(--accent-color);
+      font-size: 2.5vw;
+    }
 
-        button {
-            background-color: #00ffe1;
-            color: #121212;
-            border: none;
-            padding: 10px 20px;
-            margin: 5px;
-            font-size: 1em;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
+    #duty-cycle {
+      font-size: 1.8vw;
+      color: #ffdd57;
+      text-align: center;
+      margin-top: 10px;
+    }
 
-        button:hover {
-            background-color: #00ccbb;
-        }
-    </style>
+    #loading {
+      text-align: center;
+      font-size: 1.2em;
+      margin-top: 15px;
+      display: none;
+      color: var(--accent-color);
+    }
+
+    .button-container {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    button {
+      background-color: var(--accent-color);
+      color: var(--bg-color);
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 1em;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: var(--button-hover);
+    }
+
+    .chart-card {
+      background-color: var(--card-bg);
+      border-radius: 10px;
+      padding: 20px;
+      margin: 30px auto;
+      max-width: 960px;
+      box-shadow: 0 0 10px rgba(0, 255, 225, 0.1);
+    }
+
+    canvas {
+      width: 100%;
+      height: 400px;
+    }
+  </style>
 </head>
-<body>
-    <h1>Inverter Voltage Dashboard</h1>
-    <div id="duty-cycle">Duty Cycle: --%</div>
-    <div style="text-align: center; margin-top: 20px;">
-        <button onclick="refreshData()">Refresh Now</button>
-        <button onclick="toggleCharts()">Toggle Charts</button>
-        <button onclick="clearGraphs()">Clear Graphs</button>
-    </div>
+<body data-theme="dark">
+  <h1>Inverter Voltage Dashboard</h1>
+  <div id="duty-cycle">Duty Cycle: --%</div>
+  <div id="loading">Loading data...</div>
 
-    <canvas id="inputChart"></canvas>
-    <canvas id="outputChart"></canvas>
+  <div class="button-container">
+    <button onclick="refreshData()">Refresh Now</button>
+    <button onclick="toggleCharts()">Toggle Charts</button>
+    <button onclick="clearGraphs()">Clear Graphs</button>
+    <button onclick="toggleTheme()">Toggle Theme</button>
+  </div>
 
-    <script>
-        const inputCtx = document.getElementById('inputChart').getContext('2d');
-        const outputCtx = document.getElementById('outputChart').getContext('2d');
+  <div class="chart-card"><canvas id="inputChart"></canvas></div>
+  <div class="chart-card"><canvas id="outputChart"></canvas></div>
 
-        const inputChart = new Chart(inputCtx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    {
-                        label: 'Input Voltage (V)',
-                        data: [],
-                        borderColor: '#1e90ff',
-                        yAxisID: 'y',
-                        fill: false,
-                        tension: 0.3,
-                        pointRadius: 0
-                    },
-                    {
-                        label: 'Input Current (mA)',
-                        data: [],
-                        borderColor: '#ff6347',
-                        yAxisID: 'y1',
-                        fill: false,
-                        tension: 0.3,
-                        pointRadius: 0
-                    }
-                ]
-            },
-            options: {
-                plugins: {
-                    legend: { labels: { color: '#fff' } }
-                },
-                scales: {
-                    x: {
-                        ticks: {
-                            color: '#ccc',
-                            callback: () => ''
-                        },
-                        title: {
-                            display: true,
-                            text: 'Time',
-                            color: '#ccc'
-                        }
-                    },
-                    y: {
-                        type: 'linear',
-                        position: 'left',
-                        ticks: { color: '#ccc' },
-                        title: { display: true, text: 'Voltage (V)', color: '#ccc' }
-                    },
-                    y1: {
-                        type: 'linear',
-                        position: 'right',
-                        ticks: { color: '#ccc' },
-                        grid: { drawOnChartArea: false },
-                        title: { display: true, text: 'Current (mA)', color: '#ccc' }
-                    }
-                }
-            }
-        });
+  <script>
+    const inputCtx = document.getElementById('inputChart').getContext('2d');
+    const outputCtx = document.getElementById('outputChart').getContext('2d');
 
-        const outputChart = new Chart(outputCtx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    {
-                        label: 'Output Voltage (V)',
-                        data: [],
-                        borderColor: '#00fa9a',
-                        yAxisID: 'y',
-                        fill: false,
-                        tension: 0.3,
-                        pointRadius: 0
-                    },
-                    {
-                        label: 'Output Current (mA)',
-                        data: [],
-                        borderColor: '#ffa500',
-                        yAxisID: 'y1',
-                        fill: false,
-                        tension: 0.3,
-                        pointRadius: 0
-                    }
-                ]
-            },
-            options: {
-                plugins: {
-                    legend: { labels: { color: '#fff' } }
-                },
-                scales: {
-                    x: {
-                        ticks: {
-                            color: '#ccc',
-                            callback: () => ''
-                        },
-                        title: {
-                            display: true,
-                            text: 'Time',
-                            color: '#ccc'
-                        }
-                    },
-                    y: {
-                        type: 'linear',
-                        position: 'left',
-                        ticks: { color: '#ccc' },
-                        title: { display: true, text: 'Voltage (V)', color: '#ccc' }
-                    },
-                    y1: {
-                        type: 'linear',
-                        position: 'right',
-                        ticks: { color: '#ccc' },
-                        grid: { drawOnChartArea: false },
-                        title: { display: true, text: 'Current (mA)', color: '#ccc' }
-                    }
-                }
-            }
-        });
-
-        let autoUpdateInterval = null;
-
-        async function fetchData() {
-            try {
-                const response = await fetch('data.json');
-                const rawData = await response.json();
-
-                const data = rawData.filter(e =>
-                    e.LowSideVoltage !== undefined &&
-                    e.HighSideVoltage !== undefined &&
-                    e.LowSideCurrent !== undefined &&
-                    e.HighSideCurrent !== undefined
-                );
-
-                const timestamps = data.map(e => new Date(e.timestamp).toLocaleTimeString());
-                const lowVoltages = data.map(e => parseFloat(e.LowSideVoltage) / 1000); // mV to V
-                const lowCurrents = data.map(e => parseFloat(e.LowSideCurrent));
-                const highVoltages = data.map(e => parseFloat(e.HighSideVoltage) / 1000);
-                const highCurrents = data.map(e => parseFloat(e.HighSideCurrent));
-                const duty = data[data.length - 1].DutyCycle;
-
-                document.getElementById("duty-cycle").innerText = `Duty Cycle: ${duty}`;
-
-                inputChart.data.labels = timestamps;
-                inputChart.data.datasets[0].data = lowVoltages;
-                inputChart.data.datasets[1].data = lowCurrents;
-                inputChart.update();
-
-                outputChart.data.labels = timestamps;
-                outputChart.data.datasets[0].data = highVoltages;
-                outputChart.data.datasets[1].data = highCurrents;
-                outputChart.update();
-            } catch (err) {
-                console.error("Error fetching or parsing data:", err);
-            }
+    const inputChart = new Chart(inputCtx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: 'Input Voltage (V)',
+            data: [],
+            borderColor: '#1e90ff',
+            yAxisID: 'y',
+            fill: false,
+            tension: 0.3,
+            pointRadius: 0
+          },
+          {
+            label: 'Input Current (mA)',
+            data: [],
+            borderColor: '#ff6347',
+            yAxisID: 'y1',
+            fill: false,
+            tension: 0.3,
+            pointRadius: 0
+          }
+        ]
+      },
+      options: {
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { labels: { color: '#ccc' } } },
+        scales: {
+          x: {
+            ticks: { color: '#ccc', callback: () => '' },
+            title: { display: true, text: 'Time', color: '#ccc' }
+          },
+          y: {
+            position: 'left',
+            ticks: { color: '#ccc' },
+            title: { display: true, text: 'Voltage (V)', color: '#ccc' }
+          },
+          y1: {
+            position: 'right',
+            grid: { drawOnChartArea: false },
+            ticks: { color: '#ccc' },
+            title: { display: true, text: 'Current (mA)', color: '#ccc' }
+          }
         }
+      }
+    });
 
-        function refreshData() {
-            fetchData();
-            if (autoUpdateInterval) clearInterval(autoUpdateInterval);
-            autoUpdateInterval = setInterval(fetchData, 3000);
+    const outputChart = new Chart(outputCtx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: 'Output Voltage (V)',
+            data: [],
+            borderColor: '#00fa9a',
+            yAxisID: 'y',
+            fill: false,
+            tension: 0.3,
+            pointRadius: 0
+          },
+          {
+            label: 'Output Current (mA)',
+            data: [],
+            borderColor: '#ffa500',
+            yAxisID: 'y1',
+            fill: false,
+            tension: 0.3,
+            pointRadius: 0
+          }
+        ]
+      },
+      options: {
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { labels: { color: '#ccc' } } },
+        scales: {
+          x: {
+            ticks: { color: '#ccc', callback: () => '' },
+            title: { display: true, text: 'Time', color: '#ccc' }
+          },
+          y: {
+            position: 'left',
+            ticks: { color: '#ccc' },
+            title: { display: true, text: 'Voltage (V)', color: '#ccc' }
+          },
+          y1: {
+            position: 'right',
+            grid: { drawOnChartArea: false },
+            ticks: { color: '#ccc' },
+            title: { display: true, text: 'Current (mA)', color: '#ccc' }
+          }
         }
+      }
+    });
 
-        function clearGraphs() {
-            if (autoUpdateInterval) clearInterval(autoUpdateInterval);
+    let autoUpdateInterval = null;
 
-            inputChart.data.labels = [];
-            inputChart.data.datasets.forEach(ds => ds.data = []);
-            inputChart.update();
+    async function fetchData() {
+      document.getElementById('loading').style.display = 'block';
+      try {
+        const response = await fetch('data.json');
+        const rawData = await response.json();
 
-            outputChart.data.labels = [];
-            outputChart.data.datasets.forEach(ds => ds.data = []);
-            outputChart.update();
+        const data = rawData.filter(e =>
+          e.LowSideVoltage !== undefined &&
+          e.HighSideVoltage !== undefined &&
+          e.LowSideCurrent !== undefined &&
+          e.HighSideCurrent !== undefined
+        );
 
-            document.getElementById("duty-cycle").innerText = "Duty Cycle: --%";
-        }
+        const timestamps = data.map(e => new Date(e.timestamp).toLocaleTimeString());
+        const lowVoltages = data.map(e => parseFloat(e.LowSideVoltage) / 1000);
+        const lowCurrents = data.map(e => parseFloat(e.LowSideCurrent));
+        const highVoltages = data.map(e => parseFloat(e.HighSideVoltage) / 1000);
+        const highCurrents = data.map(e => parseFloat(e.HighSideCurrent));
+        const duty = data[data.length - 1].DutyCycle;
 
-        let chartsVisible = true;
-        function toggleCharts() {
-            chartsVisible = !chartsVisible;
-            document.getElementById('inputChart').style.display = chartsVisible ? 'block' : 'none';
-            document.getElementById('outputChart').style.display = chartsVisible ? 'block' : 'none';
-        }
+        document.getElementById("duty-cycle").innerText = `Duty Cycle: ${duty}%`;
 
-        // Initial load
-        refreshData();
-    </script>
+        inputChart.data.labels = timestamps;
+        inputChart.data.datasets[0].data = lowVoltages;
+        inputChart.data.datasets[1].data = lowCurrents;
+        inputChart.update();
+
+        outputChart.data.labels = timestamps;
+        outputChart.data.datasets[0].data = highVoltages;
+        outputChart.data.datasets[1].data = highCurrents;
+        outputChart.update();
+      } catch (err) {
+        console.error("Error fetching or parsing data:", err);
+      } finally {
+        document.getElementById('loading').style.display = 'none';
+      }
+    }
+
+    function refreshData() {
+      fetchData();
+      if (autoUpdateInterval) clearInterval(autoUpdateInterval);
+      autoUpdateInterval = setInterval(fetchData, 3000);
+    }
+
+    function clearGraphs() {
+      if (autoUpdateInterval) clearInterval(autoUpdateInterval);
+
+      inputChart.data.labels = [];
+      inputChart.data.datasets.forEach(ds => ds.data = []);
+      inputChart.update();
+
+      outputChart.data.labels = [];
+      outputChart.data.datasets.forEach(ds => ds.data = []);
+      outputChart.update();
+
+      document.getElementById("duty-cycle").innerText = "Duty Cycle: --%";
+    }
+
+    let chartsVisible = true;
+    function toggleCharts() {
+      chartsVisible = !chartsVisible;
+      document.getElementById('inputChart').parentElement.style.display = chartsVisible ? 'block' : 'none';
+      document.getElementById('outputChart').parentElement.style.display = chartsVisible ? 'block' : 'none';
+    }
+
+    function toggleTheme() {
+      const body = document.body;
+      const currentTheme = body.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      body.setAttribute('data-theme', newTheme);
+      updateChartColors(newTheme);
+    }
+
+    function updateChartColors(theme) {
+      const isDark = theme === 'dark';
+      const axisColor = isDark ? '#ccc' : '#333';
+      const tooltipBG = isDark ? '#333' : '#eee';
+      const tooltipText = isDark ? '#fff' : '#111';
+
+      [inputChart, outputChart].forEach(chart => {
+        chart.options.plugins.legend.labels.color = axisColor;
+
+        chart.options.scales.x.ticks.color = axisColor;
+        chart.options.scales.x.title.color = axisColor;
+        chart.options.scales.y.ticks.color = axisColor;
+        chart.options.scales.y.title.color = axisColor;
+        chart.options.scales.y1.ticks.color = axisColor;
+        chart.options.scales.y1.title.color = axisColor;
+
+        chart.options.plugins.tooltip = {
+          backgroundColor: tooltipBG,
+          titleColor: tooltipText,
+          bodyColor: tooltipText,
+          borderColor: isDark ? '#00ffe1' : '#007bff',
+          borderWidth: 1
+        };
+
+        chart.update();
+      });
+    }
+
+    refreshData();
+    updateChartColors('dark');
+  </script>
 </body>
 </html>
