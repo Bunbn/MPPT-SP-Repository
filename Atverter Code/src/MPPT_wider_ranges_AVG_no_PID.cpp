@@ -1,9 +1,9 @@
 /*
-  Voltage-targeting Buck Converter
+  Incremental Conductance MPPT Controller
   Created: 4/21/2025
   By: Alex Aarnio
 
-  Code adapted from:
+  Using code adapted from:
     "Output Voltage Controller for Buck Converter"
     Created: 1/25/2023
     By: Elijah Gordon and Joshua Hutchinson
@@ -16,10 +16,11 @@
 #include <AtverterE.h>
 
 #define INTERRUPT_TIME 1
+#define NUM_AVERAGES 1000
 #define DUTY_CYCLE_INCREMENT 20
 #define VOLTAGE_ERROR_RANGE 10
 #define CURRENT_ERROR_RANGE 20
-#define NUM_AVERAGES 1000
+#define LOW_SIDE_MAX_VOLTAGE 15000
 
 #define DEBUG 1
 #define SAFETY_ENABLE 0
@@ -29,48 +30,34 @@ int ledState = HIGH;
 
 // Variables for buck control
 uint16_t dutyCycle;
-int32_t desiredLowVoltage; // Target Output Voltage
-int32_t actualHighVoltage; // Input Voltage
-int32_t actualLowVoltage;  // Actual Output Voltage
 
-// Safety Shutoff
-bool VOLTAGE_SAFETY = 0; // Safety Shutoff Flag
-uint16_t lowSideMaxVoltage = 15000;
-// int lowSideMaxCurrent  = 3000;
-// int highSideMaxCurrent = 3000;
-
-double integralControl = 0.0;
-int32_t prevVoltageError = 0;
-
-// Control gain variables
-const double kp = 0.3;  // Proportional Control: kp * error
-const double ki = 0.05; // Integral Control: summation of (ki * error * sample_time)
-const double kd = 0.0;  // Derivative Control:
+// Safety shutoff flag
+bool VOLTAGE_SAFETY = 0;
 
 // Variables for averaging
-int32_t avgLowCurrent;
-int32_t avgPrevLowCurrent;
+int16_t avgCount = 0;
+
+int avgLowCurrentSum;
+int avgHighCurrentSum;
+int32_t avgLowVoltageSum;
+int32_t avgHighVoltageSum;
+
+int avgLowCurrent;
+int avgPrevLowCurrent;
 int32_t avgLowVoltage;
 int32_t avgPrevLowVoltage;
 
-int32_t avgHighCurrent;
+int avgHighCurrent;
 int32_t avgHighVoltage;
 
 // Variables for IC algorithm
 int32_t dV;
-int32_t dI;
-
-int16_t avgCount = 0;
-int32_t avgLowCurrentSum;
-int32_t avgLowVoltageSum;
-
-int32_t avgHighCurrentSum;
-int32_t avgHighVoltageSum;
+int dI;
 
 // Voltage sensor calibration
-const double VL_scale = 1.03;
+const double VL_scale  = 1.00;
 const double VL_offset = 36;
-const double VH_scale = 1;
+const double VH_scale  = 0.98;
 const double VH_offset = 0;
 
 // Function prototypes
@@ -82,16 +69,13 @@ int32_t getCalibratedVL();
 
 void setup(void)
 {
-    desiredLowVoltage = 8000; // Desired output voltage eventually find a way to get this value from the user
-    actualHighVoltage = getCalibratedVH();
-
     atverterE.setupPinMode();       // Get pins setup
     atverterE.initializePWMTimer(); // Setup Timers
 
     atverterE.initializeInterruptTimer(INTERRUPT_TIME, &controlUpdate); // Get interrupts enabled
     Serial.begin(9600);
 
-    dutyCycle = (desiredLowVoltage * 1024) / actualHighVoltage;
+    dutyCycle = 512;    // set initial 50% duty cycle, quickly changed by IC algorithm
     atverterE.setDutyCycle(dutyCycle);
     atverterE.startPWM();
 }
@@ -102,42 +86,26 @@ void loop(void)
 
 void controlUpdate(void)
 {
-// Perform voltage control
-// -----------------------------------------------------------------------------------------------------------------------------------
 #if SAFETY_ENABLE
     if (VOLTAGE_SAFETY)
     {
         dutyCycle = ((12000 / getCalibratedVH()) * 1024); // set duty cycle to get roughly 12V on battery side
         atverterE.setDutyCycle(dutyCycle);
         Serial.print("Safety Shutoff Triggered\n");
+        return;
     }
     else
 #endif
     {
-        // store data for avg calculation
-        int lowCurrent = atverterE.getIL();
-        // if(lowCurrent > lowSideMaxCurrent) {
-        //   SAFETY_SHUTOFF = 1;
-        //   Serial.print("Low Side Overcurrent\n");
-        // }
-        avgLowCurrentSum += lowCurrent;
+        // Store data for averaging
+        // -----------------------------------------------------------------------------------------------------------------------------------
+        avgLowCurrentSum += atverterE.getIL();
+        avgHighCurrentSum += atverterE.getIH();
+
         avgLowVoltageSum += getCalibratedVL();
-
-        int highCurrent = atverterE.getIH();
-        // if(highCurrent > highSideMaxCurrent) {
-        //   SAFETY_SHUTOFF = 1;
-        //   Serial.print("High Side Overcurrent\n");
-        // }
-        avgHighCurrentSum += highCurrent;
         avgHighVoltageSum += getCalibratedVH();
+
         avgCount++;
-
-        dutyCycle = constrain(dutyCycle, 10, 1023);
-        // Serial.print("Constrained new dutyCycle: ");
-        // Serial.print(dutyCycle);
-        // Serial.print("\n\n");
-
-        atverterE.setDutyCycle(dutyCycle);
 
         // toggle LED to show control loop is running
         atverterE.setLED(LED1G_PIN, ledState);
@@ -145,7 +113,6 @@ void controlUpdate(void)
 
         // Perform IC operations
         // -----------------------------------------------------------------------------------------------------------------------------------
-
         if (avgCount == NUM_AVERAGES)
         { // perform full IC operation
 
@@ -159,7 +126,7 @@ void controlUpdate(void)
             dV = avgLowVoltage - avgPrevLowVoltage;
             dI = avgLowCurrent - avgPrevLowCurrent;
 
-            if (avgLowVoltage > lowSideMaxVoltage)
+            if (avgLowVoltage > LOW_SIDE_MAX_VOLTAGE)
             {
                 VOLTAGE_SAFETY = 1;
                 Serial.print("Low Side Overvoltage\n");
@@ -241,10 +208,10 @@ void controlUpdate(void)
             avgHighCurrentSum = 0;
             avgHighVoltageSum = 0;
 
+            dutyCycle = constrain(dutyCycle, 10, 1023);
+            atverterE.setDutyCycle(dutyCycle);
+
             transmitData(); // send relevent data over UART
-        }
-        else
-        {
         }
     }
 }
