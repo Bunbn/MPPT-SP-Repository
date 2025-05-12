@@ -1,0 +1,300 @@
+/*
+  Voltage-targeting Buck Converter
+  Created: 4/21/2025
+  By: Alex Aarnio
+
+  Code adapted from:
+    "Output Voltage Controller for Buck Converter"
+    Created: 1/25/2023
+    By: Elijah Gordon and Joshua Hutchinson
+
+  IC algorithm based on:
+    https://www.sciencedirect.com/science/article/pii/S1364032116305706
+*/
+
+#include <Arduino.h>
+#include <AtverterE.h>
+
+#define INTERRUPT_TIME 1
+#define DUTY_CYCLE_INCREMENT 20
+#define VOLTAGE_ERROR_RANGE 10
+#define CURRENT_ERROR_RANGE 20
+#define NUM_AVERAGES 1000
+
+#define DEBUG 1
+#define SAFETY_ENABLE 0
+
+AtverterE atverterE;
+int ledState = HIGH;
+
+// Variables for buck control
+uint16_t dutyCycle;
+int32_t desiredLowVoltage; // Target Output Voltage
+int32_t actualHighVoltage; // Input Voltage
+int32_t actualLowVoltage;  // Actual Output Voltage
+
+// Safety Shutoff
+bool VOLTAGE_SAFETY = 0; // Safety Shutoff Flag
+uint16_t lowSideMaxVoltage = 15000;
+// int lowSideMaxCurrent  = 3000;
+// int highSideMaxCurrent = 3000;
+
+double integralControl = 0.0;
+int32_t prevVoltageError = 0;
+
+// Control gain variables
+const double kp = 0.3;  // Proportional Control: kp * error
+const double ki = 0.05; // Integral Control: summation of (ki * error * sample_time)
+const double kd = 0.0;  // Derivative Control:
+
+// Variables for averaging
+int32_t avgLowCurrent;
+int32_t avgPrevLowCurrent;
+int32_t avgLowVoltage;
+int32_t avgPrevLowVoltage;
+
+int32_t avgHighCurrent;
+int32_t avgHighVoltage;
+
+// Variables for IC algorithm
+int32_t dV;
+int32_t dI;
+
+int16_t avgCount = 0;
+int32_t avgLowCurrentSum;
+int32_t avgLowVoltageSum;
+
+int32_t avgHighCurrentSum;
+int32_t avgHighVoltageSum;
+
+// Voltage sensor calibration
+const double VL_scale = 1.03;
+const double VL_offset = 36;
+const double VH_scale = 1;
+const double VH_offset = 0;
+
+// Function prototypes
+void setup();
+void controlUpdate();
+void transmitData();
+int32_t getCalibratedVH();
+int32_t getCalibratedVL();
+
+void setup(void)
+{
+    desiredLowVoltage = 8000; // Desired output voltage eventually find a way to get this value from the user
+    actualHighVoltage = getCalibratedVH();
+
+    atverterE.setupPinMode();       // Get pins setup
+    atverterE.initializePWMTimer(); // Setup Timers
+
+    atverterE.initializeInterruptTimer(INTERRUPT_TIME, &controlUpdate); // Get interrupts enabled
+    Serial.begin(9600);
+
+    dutyCycle = (desiredLowVoltage * 1024) / actualHighVoltage;
+    atverterE.setDutyCycle(dutyCycle);
+    atverterE.startPWM();
+}
+
+void loop(void)
+{
+}
+
+void controlUpdate(void)
+{
+// Perform voltage control
+// -----------------------------------------------------------------------------------------------------------------------------------
+#if SAFETY_ENABLE
+    if (VOLTAGE_SAFETY)
+    {
+        dutyCycle = ((12000 / getCalibratedVH()) * 1024); // set duty cycle to get roughly 12V on battery side
+        atverterE.setDutyCycle(dutyCycle);
+        Serial.print("Safety Shutoff Triggered\n");
+    }
+    else
+#endif
+    {
+        // store data for avg calculation
+        int lowCurrent = atverterE.getIL();
+        // if(lowCurrent > lowSideMaxCurrent) {
+        //   SAFETY_SHUTOFF = 1;
+        //   Serial.print("Low Side Overcurrent\n");
+        // }
+        avgLowCurrentSum += lowCurrent;
+        avgLowVoltageSum += getCalibratedVL();
+
+        int highCurrent = atverterE.getIH();
+        // if(highCurrent > highSideMaxCurrent) {
+        //   SAFETY_SHUTOFF = 1;
+        //   Serial.print("High Side Overcurrent\n");
+        // }
+        avgHighCurrentSum += highCurrent;
+        avgHighVoltageSum += getCalibratedVH();
+        avgCount++;
+
+        dutyCycle = constrain(dutyCycle, 10, 1023);
+        // Serial.print("Constrained new dutyCycle: ");
+        // Serial.print(dutyCycle);
+        // Serial.print("\n\n");
+
+        atverterE.setDutyCycle(dutyCycle);
+
+        // toggle LED to show control loop is running
+        atverterE.setLED(LED1G_PIN, ledState);
+        ledState = !ledState;
+
+        // Perform IC operations
+        // -----------------------------------------------------------------------------------------------------------------------------------
+
+        if (avgCount == NUM_AVERAGES)
+        { // perform full IC operation
+
+            // calculate current averages
+            avgLowCurrent = avgLowCurrentSum / (NUM_AVERAGES + 1);
+            avgLowVoltage = avgLowVoltageSum / (NUM_AVERAGES + 1);
+
+            avgHighCurrent = avgHighCurrentSum / (NUM_AVERAGES + 1);
+            avgHighVoltage = avgHighVoltageSum / (NUM_AVERAGES + 1);
+
+            dV = avgLowVoltage - avgPrevLowVoltage;
+            dI = avgLowCurrent - avgPrevLowCurrent;
+
+            if (avgLowVoltage > lowSideMaxVoltage)
+            {
+                VOLTAGE_SAFETY = 1;
+                Serial.print("Low Side Overvoltage\n");
+            }
+
+            if ((-VOLTAGE_ERROR_RANGE < dV) && (dV < VOLTAGE_ERROR_RANGE))
+            {
+#if DEBUG
+                Serial.print("dV ~= 0\t");
+#endif
+                if (dI > CURRENT_ERROR_RANGE)
+                {
+#if DEBUG
+                    Serial.print("dI ~> 0\t");
+#endif
+                    dutyCycle += DUTY_CYCLE_INCREMENT; // inc. duty cycle
+                }
+                else if (dI < -CURRENT_ERROR_RANGE)
+                {
+#if DEBUG
+                    Serial.print("dI ~< 0\t");
+#endif
+                    dutyCycle += -DUTY_CYCLE_INCREMENT; // dec. duty cycle
+                }
+                else
+                {
+#if DEBUG
+                    Serial.print("dI ~= 0\t");
+#endif
+                    // dutyCycle += 0; // no change
+                }
+            }
+            else
+            {
+#if DEBUG
+                Serial.print("dV != 0\t");
+
+                Serial.print("dI/dV = ");
+                Serial.print((double)dI / dV);
+                Serial.print("\t");
+
+                Serial.print("avgI/avgV = ");
+                Serial.print((double)-avgLowCurrent / avgLowVoltage);
+                Serial.print("\t");
+#endif
+
+                if (((double)dI / dV > -((double)avgLowCurrent / avgLowVoltage + CURRENT_ERROR_RANGE / VOLTAGE_ERROR_RANGE)) && ((double)dI / dV > -((double)avgLowCurrent / avgLowVoltage - CURRENT_ERROR_RANGE / VOLTAGE_ERROR_RANGE)))
+                {
+#if DEBUG
+                    Serial.print("dI/dV ~> -avg\t");
+#endif
+                    dutyCycle += DUTY_CYCLE_INCREMENT;
+                }
+                else if (((double)dI / dV < -((double)avgLowCurrent / avgLowVoltage + CURRENT_ERROR_RANGE / VOLTAGE_ERROR_RANGE)) && ((double)dI / dV < -((double)avgLowCurrent / avgLowVoltage - CURRENT_ERROR_RANGE / VOLTAGE_ERROR_RANGE)))
+                {
+#if DEBUG
+                    Serial.print("dI/dV ~< -avg\t");
+#endif
+                    dutyCycle += -DUTY_CYCLE_INCREMENT;
+                }
+                else
+                {
+#if DEBUG
+                    Serial.print("dI/dV ~= -avg\t");
+#endif
+                    // dutyCycle += 0;
+                }
+            }
+            Serial.print("\r\n");
+            avgCount = 0; // reset count
+
+            // save previous values for voltage/current
+            avgPrevLowCurrent = avgLowCurrent;
+            avgPrevLowVoltage = avgLowVoltage;
+
+            // reset sums for average calcs
+            avgLowCurrentSum = 0;
+            avgLowVoltageSum = 0;
+            avgHighCurrentSum = 0;
+            avgHighVoltageSum = 0;
+
+            transmitData(); // send relevent data over UART
+        }
+        else
+        {
+        }
+    }
+}
+
+void transmitData()
+{
+    Serial.print("LowSideVoltage: ");
+    Serial.print(avgLowVoltage);
+    Serial.print("\t");
+
+    Serial.print("LowSideCurrent: ");
+    Serial.print(avgLowCurrent);
+    Serial.print("\t");
+
+    Serial.print("HighSideVoltage: ");
+    Serial.print(avgHighVoltage);
+    Serial.print("\t");
+
+    Serial.print("HighSideCurrent: ");
+    Serial.print(avgHighCurrent);
+    Serial.print("\t");
+    Serial.print("\r\n");
+
+#if DEBUG
+    Serial.print("DutyCycle: ");
+    Serial.print(dutyCycle);
+    Serial.print("\t");
+
+    Serial.print("dV: ");
+    Serial.print(dV);
+    Serial.print("\t");
+
+    Serial.print("dI: ");
+    Serial.print(dI);
+    Serial.print("\t");
+
+    Serial.print("dV: ");
+    Serial.print(dV);
+    Serial.print("\r\n");
+#endif
+
+    Serial.print("------------------------------------------------------------------------\n");
+}
+
+int32_t getCalibratedVH()
+{
+    return (int32_t)(((double)atverterE.getActualVH() * VH_scale) + VH_offset);
+}
+
+int32_t getCalibratedVL()
+{
+    return (int32_t)(((double)atverterE.getActualVL() * VL_scale) + VL_offset);
+}

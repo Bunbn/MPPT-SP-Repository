@@ -22,6 +22,7 @@
 #define NUM_AVERAGES 1000
 
 #define DEBUG 1
+#define SAFETY_ENABLE 0
 
 AtverterE atverterE;
 int ledState = HIGH;
@@ -33,8 +34,8 @@ int32_t actualHighVoltage; // Input Voltage
 int32_t actualLowVoltage;  // Actual Output Voltage
 
 // Safety Shutoff
-bool VOLTAGE_SAFETY = 0;   // Safety Shutoff Flag
-uint16_t lowSideMaxVoltage  = 15000;
+bool VOLTAGE_SAFETY = 0; // Safety Shutoff Flag
+uint16_t lowSideMaxVoltage = 15000;
 // int lowSideMaxCurrent  = 3000;
 // int highSideMaxCurrent = 3000;
 
@@ -103,21 +104,19 @@ void controlUpdate(void)
 {
   // Perform voltage control
   // -----------------------------------------------------------------------------------------------------------------------------------
-  // if (VOLTAGE_SAFETY)
-  if(0)
+  #if SAFETY_ENABLE
+  if (VOLTAGE_SAFETY)
   {
-    dutyCycle = (12000 * 1024) / getCalibratedVH();   // set duty cycle to get roughly 12V on battery side
+    dutyCycle = ((12000 / getCalibratedVH()) * 1024); // set duty cycle to get roughly 12V on battery side
     atverterE.setDutyCycle(dutyCycle);
     Serial.print("Safety Shutoff Triggered\n");
   }
   else
+  #endif
   {
     // Read voltage on low side
     actualLowVoltage = getCalibratedVL();
-    if(actualLowVoltage > lowSideMaxVoltage) {
-      VOLTAGE_SAFETY = 1;
-      Serial.print("Low Side Overvoltage\n");
-    }
+
     int32_t voltageError = actualLowVoltage - desiredLowVoltage; // Instantaneous error of the desired output versus actual output voltage
     // Serial.print("Voltage Error: ");
     // Serial.print(voltageError);
@@ -178,51 +177,73 @@ void controlUpdate(void)
       dV = avgLowVoltage - avgPrevLowVoltage;
       dI = avgLowCurrent - avgPrevLowCurrent;
 
+      if (avgLowVoltage > lowSideMaxVoltage)
+      {
+        VOLTAGE_SAFETY = 1;
+        Serial.print("Low Side Overvoltage\n");
+      }
+
       if ((-VOLTAGE_ERROR_RANGE < dV) && (dV < VOLTAGE_ERROR_RANGE))
       {
+        #if DEBUG
         Serial.print("dV ~= 0\t");
+        #endif
         if (dI > CURRENT_ERROR_RANGE)
         {
+          #if DEBUG
           Serial.print("dI ~> 0\t");
+          #endif
           dutyCycle += DUTY_CYCLE_INCREMENT; // inc. duty cycle
         }
         else if (dI < -CURRENT_ERROR_RANGE)
         {
+          #if DEBUG
           Serial.print("dI ~< 0\t");
+          #endif
           dutyCycle += -DUTY_CYCLE_INCREMENT; // dec. duty cycle
         }
         else
         {
+          #if DEBUG
           Serial.print("dI ~= 0\t");
-          dutyCycle += 0; // no change
+          #endif
+          // dutyCycle += 0; // no change
         }
       }
       else
       {
+        #if DEBUG
         Serial.print("dV != 0\t");
 
         Serial.print("dI/dV = ");
-        Serial.print((double) dI/dV);
+        Serial.print((double)dI / dV);
         Serial.print("\t");
 
         Serial.print("avgI/avgV = ");
-        Serial.print((double) -avgLowCurrent/avgLowVoltage);
+        Serial.print((double)-avgLowCurrent / avgLowVoltage);
         Serial.print("\t");
+        #endif
 
-        if (((double) dI/dV > -((double) avgLowCurrent/avgLowVoltage + CURRENT_ERROR_RANGE/VOLTAGE_ERROR_RANGE)) && ((double) dI/dV > -((double) avgLowCurrent/avgLowVoltage - CURRENT_ERROR_RANGE/VOLTAGE_ERROR_RANGE)))
+        if (((double)dI / dV > -((double)avgLowCurrent / avgLowVoltage + CURRENT_ERROR_RANGE / VOLTAGE_ERROR_RANGE)) && ((double)dI / dV > -((double)avgLowCurrent / avgLowVoltage - CURRENT_ERROR_RANGE / VOLTAGE_ERROR_RANGE)))
         {
+          #if DEBUG
           Serial.print("dI/dV ~> -avg\t");
+          #endif
           dutyCycle += DUTY_CYCLE_INCREMENT;
         }
-        else if (((double) dI/dV < -((double) avgLowCurrent/avgLowVoltage + CURRENT_ERROR_RANGE/VOLTAGE_ERROR_RANGE)) && ((double) dI/dV < -((double) avgLowCurrent/avgLowVoltage - CURRENT_ERROR_RANGE/VOLTAGE_ERROR_RANGE)))
+        else if (((double)dI / dV < -((double)avgLowCurrent / avgLowVoltage + CURRENT_ERROR_RANGE / VOLTAGE_ERROR_RANGE)) && ((double)dI / dV < -((double)avgLowCurrent / avgLowVoltage - CURRENT_ERROR_RANGE / VOLTAGE_ERROR_RANGE)))
         {
+          #if DEBUG 
           Serial.print("dI/dV ~< -avg\t");
+          #endif
           dutyCycle += -DUTY_CYCLE_INCREMENT;
         }
         else
         {
+          #if DEBUG
           Serial.print("dI/dV ~= -avg\t");
-          dutyCycle += 0;
+          #endif
+          // dutyCycle += 0;
         }
       }
       Serial.print("\r\n");
@@ -281,24 +302,25 @@ void transmitData()
   Serial.print("\t");
   Serial.print("\r\n");
 
-  if(DEBUG) {
-    Serial.print("DutyCycle: ");
-    Serial.print(dutyCycle);
-    Serial.print("\t");
+  #if DEBUG
+  Serial.print("DutyCycle: ");
+  Serial.print(dutyCycle);
+  Serial.print("\t");
 
-    Serial.print("dV: ");
-    Serial.print(dV);
-    Serial.print("\t");
+  Serial.print("dV: ");
+  Serial.print(dV);
+  Serial.print("\t");
 
-    Serial.print("dI: ");
-    Serial.print(dI);
-    Serial.print("\t");
+  Serial.print("dI: ");
+  Serial.print(dI);
+  Serial.print("\t");
 
-    Serial.print("dV: ");
-    Serial.print(dV);
-    Serial.print("\r\n");
-  }
-  Serial.println("--------------------------------------------------------------");
+  Serial.print("dV: ");
+  Serial.print(dV);
+  Serial.print("\r\n");
+  #endif
+
+  Serial.print("------------------------------------------------------------------------\n");
 }
 
 int32_t getCalibratedVH()
