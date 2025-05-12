@@ -19,7 +19,7 @@
 #define DUTY_CYCLE_INCREMENT 20
 #define VOLTAGE_ERROR_RANGE 100
 #define CURRENT_ERROR_RANGE 200
-#define NUM_AVERAGES 10
+#define NUM_AVERAGES 20
 
 AtverterE atverterE;
 int ledState = LOW;
