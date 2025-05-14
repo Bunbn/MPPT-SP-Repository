@@ -18,8 +18,8 @@
 #define INTERRUPT_TIME 1
 #define NUM_AVERAGES 1000
 #define DUTY_CYCLE_INCREMENT 20
-#define VOLTAGE_ERROR_RANGE 10
-#define CURRENT_ERROR_RANGE 20
+#define VOLTAGE_ERROR_RANGE 5
+#define CURRENT_ERROR_RANGE 1
 #define LOW_SIDE_MAX_VOLTAGE 15000
 
 #define DEBUG 1
@@ -55,9 +55,9 @@ int32_t dV;
 int dI;
 
 // Voltage sensor calibration
-const double VL_scale  = 1.00;
+const double VL_scale = 1.00;
 const double VL_offset = 36;
-const double VH_scale  = 0.98;
+const double VH_scale = 0.98;
 const double VH_offset = 0;
 
 // Function prototypes
@@ -75,7 +75,7 @@ void setup(void)
     atverterE.initializeInterruptTimer(INTERRUPT_TIME, &controlUpdate); // Get interrupts enabled
     Serial.begin(9600);
 
-    dutyCycle = 512;    // set initial 50% duty cycle, quickly changed by IC algorithm
+    dutyCycle = 512; // set initial 50% duty cycle, quickly changed by IC algorithm
     atverterE.setDutyCycle(dutyCycle);
     atverterE.startPWM();
 }
@@ -131,8 +131,7 @@ void controlUpdate(void)
                 VOLTAGE_SAFETY = 1;
                 Serial.print("Low Side Overvoltage\n");
             }
-
-            if ((-VOLTAGE_ERROR_RANGE < dV) && (dV < VOLTAGE_ERROR_RANGE))
+            Serial.print("State: \t") if ((-VOLTAGE_ERROR_RANGE < dV) && (dV < VOLTAGE_ERROR_RANGE))
             {
 #if DEBUG
                 Serial.print("dV ~= 0\t");
@@ -233,9 +232,20 @@ void transmitData()
     Serial.print("HighSideCurrent: ");
     Serial.print(avgHighCurrent);
     Serial.print("\t");
+
+    Serial.print("Low Side Power: ");
+    Serial.print(avgLowVoltage * avgLowCurrent);
+    Serial.print("\t");
+
+    Serial.print("High Side Power: ");
+    Serial.print(avgHighVoltage * avgHighCurrent);
+    Serial.print("\t");
+
     Serial.print("\r\n");
 
 #if DEBUG
+    Serial.print("DEBUG info: \t");
+
     Serial.print("DutyCycle: ");
     Serial.print(dutyCycle);
     Serial.print("\t");
@@ -250,6 +260,14 @@ void transmitData()
 
     Serial.print("dV: ");
     Serial.print(dV);
+    Serial.print("\r\n");
+
+    Serial.print("avgI: ");
+    Serial.print(avgLowCurrent);
+    Serial.print("\t");
+
+    Serial.print("avgV: ");
+    Serial.print(avgLowVoltage);
     Serial.print("\r\n");
 #endif
 

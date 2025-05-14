@@ -17,7 +17,6 @@
 AtverterE atverterE;
 int ledState = HIGH;
 
-uint16_t dutyCycle;
 int32_t actualHighVoltage; // Input Voltage
 int32_t actualLowVoltage;  // Actual Output Voltage
 
@@ -26,9 +25,6 @@ const double VL_scale = 1;
 const double VL_offset = 0;
 const double VH_scale = 1;
 const double VH_offset = 0;
-
-double integralControl = 0.0;
-int32_t prevVoltageError = 0;
 
 // Function prototypes
 void setup();
@@ -46,6 +42,9 @@ void setup(void)
 
   atverterE.initializeInterruptTimer(INTERRUPT_TIME, &controlUpdate); // Get interrupts enabled
   Serial.begin(9600);
+
+  atverterE.setDutyCycle(512);
+  atverterE.startPWM();
 }
 
 void loop(void)
