@@ -77,7 +77,6 @@
   <script>
     const inputCtx = document.getElementById('inputChart').getContext('2d');
     const outputCtx = document.getElementById('outputChart').getContext('2d');
-
     const maxPoints = 120;
 
     const inputChart = new Chart(inputCtx, {
@@ -110,7 +109,7 @@
         scales: {
           x: {
             ticks: { color: '#ccc' },
-            title: { display: true, text: 'Time (MM:SS)', color: '#ccc' }
+            title: { display: true, text: 'Time (mm:ss)', color: '#ccc' }
           },
           y: {
             type: 'linear',
@@ -159,7 +158,7 @@
         scales: {
           x: {
             ticks: { color: '#ccc' },
-            title: { display: true, text: 'Time (MM:SS)', color: '#ccc' }
+            title: { display: true, text: 'Time (mm:ss)', color: '#ccc' }
           },
           y: {
             type: 'linear',
@@ -194,45 +193,44 @@
 
     async function fetchData() {
       try {
+        // Attempt to bypass cache without using query string
+        const response = await fetch('data.json', { cache: "no-store" });
         const rawData = await response.json();
-        const response = await fetch(`data.json?nocache=${Date.now()}`);
 
         const latest = rawData[rawData.length - 1];
         const timeObj = new Date(latest.timestamp);
         const time = timeObj.toLocaleTimeString([], { minute: '2-digit', second: '2-digit' });
 
-        const lowVoltage = parseFloat(latest.LowSideVoltage) / 1000; // Convert mV to V
+        const lowVoltage = parseFloat(latest.LowSideVoltage) / 1000;
         const lowCurrent = parseFloat(latest.LowSideCurrent);
         const highVoltage = parseFloat(latest.HighSideVoltage) / 1000;
         const highCurrent = parseFloat(latest.HighSideCurrent);
         const duty = latest.DutyCycle;
 
         document.getElementById("duty-cycle").innerText = `Duty Cycle: ${duty}`;
-
         updateChart(inputChart, time, lowVoltage, lowCurrent);
         updateChart(outputChart, time, highVoltage, highCurrent);
+
       } catch (err) {
         console.error("Error fetching or parsing data:", err);
       }
     }
 
     function refreshData() {
-      fetchData(); // Only fetch once
+      // Clear existing interval if any
+      if (window.autoUpdateInterval) clearInterval(window.autoUpdateInterval);
+      fetchData(); // Do one immediately
+      window.autoUpdateInterval = setInterval(fetchData, 500); // Keep polling
     }
 
     function clearGraphs() {
       if (window.autoUpdateInterval) clearInterval(window.autoUpdateInterval);
-
       [inputChart, outputChart].forEach(chart => {
         chart.data.labels = [];
         chart.data.datasets.forEach(ds => ds.data = []);
         chart.update();
       });
-
       document.getElementById("duty-cycle").innerText = "Duty Cycle: --%";
-
-      // Restart auto-update after clearing
-      window.autoUpdateInterval = setInterval(fetchData, 500);
     }
 
     function toggleCharts() {
@@ -243,9 +241,8 @@
       outputCanvas.style.display = visible ? 'none' : 'block';
     }
 
-    // Initial fetch and auto-update setup
-    fetchData();
-    window.autoUpdateInterval = setInterval(fetchData, 500);
+    // Start auto-update on page load
+    refreshData();
   </script>
 </body>
 </html>
