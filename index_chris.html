@@ -110,7 +110,7 @@
         scales: {
           x: {
             ticks: { color: '#ccc' },
-            title: { display: true, text: 'Time (mm:ss)', color: '#ccc' }
+            title: { display: true, text: 'Time (MM:SS)', color: '#ccc' }
           },
           y: {
             type: 'linear',
@@ -159,7 +159,7 @@
         scales: {
           x: {
             ticks: { color: '#ccc' },
-            title: { display: true, text: 'Time (mm:ss)', color: '#ccc' }
+            title: { display: true, text: 'Time (MM:SS)', color: '#ccc' }
           },
           y: {
             type: 'linear',
@@ -198,12 +198,12 @@
         const rawData = await response.json();
 
         const latest = rawData[rawData.length - 1];
-        const timestamp = new Date(latest.timestamp);
-        const time = `${String(timestamp.getMinutes()).padStart(2, '0')}:${String(timestamp.getSeconds()).padStart(2, '0')}`;
+        const timeObj = new Date(latest.timestamp);
+        const time = timeObj.toLocaleTimeString([], { minute: '2-digit', second: '2-digit' });
 
-        const lowVoltage = parseFloat(latest.LowSideVoltage); // already in volts
+        const lowVoltage = parseFloat(latest.LowSideVoltage) / 1000; // Convert mV to V
         const lowCurrent = parseFloat(latest.LowSideCurrent);
-        const highVoltage = parseFloat(latest.HighSideVoltage); // already in volts
+        const highVoltage = parseFloat(latest.HighSideVoltage) / 1000;
         const highCurrent = parseFloat(latest.HighSideCurrent);
         const duty = latest.DutyCycle;
 
@@ -217,9 +217,7 @@
     }
 
     function refreshData() {
-      fetchData();
-      if (window.autoUpdateInterval) clearInterval(window.autoUpdateInterval);
-      window.autoUpdateInterval = setInterval(fetchData, 500);
+      fetchData(); // Only fetch once
     }
 
     function clearGraphs() {
@@ -232,6 +230,9 @@
       });
 
       document.getElementById("duty-cycle").innerText = "Duty Cycle: --%";
+
+      // Restart auto-update after clearing
+      window.autoUpdateInterval = setInterval(fetchData, 500);
     }
 
     function toggleCharts() {
@@ -242,8 +243,9 @@
       outputCanvas.style.display = visible ? 'none' : 'block';
     }
 
-    // Start updating on page load
-    refreshData();
+    // Initial fetch and auto-update setup
+    fetchData();
+    window.autoUpdateInterval = setInterval(fetchData, 500);
   </script>
 </body>
 </html>
