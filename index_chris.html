@@ -194,8 +194,8 @@
 
     async function fetchData() {
       try {
-        const response = await fetch('data.json');
         const rawData = await response.json();
+        const response = await fetch(`data.json?nocache=${Date.now()}`);
 
         const latest = rawData[rawData.length - 1];
         const timeObj = new Date(latest.timestamp);
