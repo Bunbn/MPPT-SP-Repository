@@ -131,7 +131,8 @@ void controlUpdate(void)
                 VOLTAGE_SAFETY = 1;
                 Serial.print("Low Side Overvoltage\n");
             }
-            Serial.print("State: \t") if ((-VOLTAGE_ERROR_RANGE < dV) && (dV < VOLTAGE_ERROR_RANGE))
+            Serial.print("State: \t");
+            if ((-VOLTAGE_ERROR_RANGE < dV) && (dV < VOLTAGE_ERROR_RANGE))
             {
 #if DEBUG
                 Serial.print("dV ~= 0\t");

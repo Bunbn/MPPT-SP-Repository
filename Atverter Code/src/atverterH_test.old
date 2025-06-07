@@ -1,0 +1,82 @@
+#include <Arduino.h>
+#include <AtverterH.h>
+
+#define INTERRUPT_TIME 1000
+
+AtverterH atverterH;
+int ledState = HIGH;
+long slowInterruptCounter = 0;
+
+// Function prototypes
+void setup();
+void controlUpdate();
+void transmitData();
+
+void setup(void)
+{
+    atverterH.setupPinMode();            // set pins to input or output
+    atverterH.initializeSensors();       // set filtered sensor values to initial reading
+    atverterH.setCurrentShutdown1(3000); // set gate shutdown at 6A peak current
+    atverterH.setCurrentShutdown2(3000); // set gate shutdown at 6A peak current
+    atverterH.setThermalShutdown(60);    // set gate shutdown at 60°C temperature
+
+    // note that the duty cycle is referenced to side 1; side 2 duty = 100 - getDutyCycle()
+    atverterH.startPWM(50);
+    atverterH.initializeInterruptTimer(INTERRUPT_TIME, &controlUpdate); // Get interrupts enabled
+    atverterH.applyHoldHigh2();                                         // hold side 2 high for a buck converter with side 1 input
+
+    atverterH.startUART(); // send messages to computer via basic UART serial
+}
+
+void loop(void)
+{
+}
+
+void controlUpdate(void)
+{
+    atverterH.updateVISensors();       // read voltage and current sensors and update moving average
+    atverterH.checkCurrentShutdown();  // checks average current and shut down gates if necessary
+    atverterH.checkThermalShutdown();  // checks switch temperature and shut down gates if necessary
+    atverterH.checkBootstrapRefresh(); // refresh bootstrap capacitors on a timer
+    // needed for buck or boost mode
+
+    slowInterruptCounter++; // in this example, do some special stuff every 1 second (1000ms)
+    if (slowInterruptCounter > 1000)
+    {
+        slowInterruptCounter = 0;
+        atverterH.updateVCC();            // read on-board VCC voltage, update stored average (shouldn't change)
+        atverterH.updateTSensors();       // occasionally read thermistors and update temperature moving average
+        atverterH.checkThermalShutdown(); // checks average temperature and shut down gates if necessary
+
+        transmitData(); // send relevent data over UART
+
+        // toggle LED to show control loop is running
+        atverterH.setLED(LED1_PIN, ledState);
+        ledState = !ledState;
+    }
+}
+
+void transmitData()
+{
+    Serial.print("LowSideVoltage: ");
+    Serial.print(atverterH.getV2());
+    Serial.print("\t");
+
+    Serial.print("LowSideCurrent = ");
+    Serial.print(atverterH.getI2());
+    Serial.print("\t");
+
+    Serial.print("HighSideVoltage: ");
+    Serial.print(atverterH.getV1());
+    Serial.print("\t");
+
+    Serial.print("HighSideCurrent = ");
+    Serial.print(atverterH.getI1());
+    Serial.print("\t");
+
+    Serial.print("DutyCycle = ");
+    Serial.print(atverterH.getDutyCycle());
+    Serial.print("\t");
+
+    Serial.print("\r\n");
+}
