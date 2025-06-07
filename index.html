@@ -86,7 +86,7 @@
         labels: [],
         datasets: [
           {
-            label: 'Input Voltage (V)',
+            label: 'Out put Voltage (V)',
             data: [],
             borderColor: '#1e90ff',
             yAxisID: 'y',
@@ -94,7 +94,7 @@
             tension: 0.3
           },
           {
-            label: 'Input Current (mA)',
+            label: 'Output Current (mA)',
             data: [],
             borderColor: '#ff6347',
             yAxisID: 'y1',
@@ -115,6 +115,7 @@
           y: {
             type: 'linear',
             position: 'left',
+            suggestedMin: 1,
             ticks: { color: '#ccc' },
             title: { display: true, text: 'Voltage (V)', color: '#ccc' }
           },
@@ -135,7 +136,7 @@
         labels: [],
         datasets: [
           {
-            label: 'Output Voltage (V)',
+            label: 'Input Voltage (V)',
             data: [],
             borderColor: '#00fa9a',
             yAxisID: 'y',
@@ -143,7 +144,7 @@
             tension: 0.3
           },
           {
-            label: 'Output Current (mA)',
+            label: 'Input Current (mA)',
             data: [],
             borderColor: '#ffa500',
             yAxisID: 'y1',
@@ -165,6 +166,7 @@
             type: 'linear',
             position: 'left',
             ticks: { color: '#ccc' },
+            suggestedMin: 1,
             title: { display: true, text: 'Voltage (V)', color: '#ccc' }
           },
           y1: {
