@@ -1,13 +1,9 @@
 # AtverterH-Based MPPT Controller
-(docs/images/interface.jpg)
-
 This project consists of code for two primary components:
 - An MPPT controller program running on an AtverterH programmable DC-DC converter
 - A web interface displaying data from the MPPT controller, running on a Raspberry Pi 
 
 ## MPPT Controller
-(docs/images/testing.jpg)
-
 The MPPT controller implements an incremental conductance (IC) algorithm running on an ATMEGA328p built into the AtverterH board.
 
 The program ```src/AtverterH_MPPT.cpp``` requires all of the libraries in the ```lib``` folder, as well as ```AnalogReadFast``` from the Arduino Library Manager.
@@ -22,7 +18,7 @@ The AtverterH board supports up to 60V, approximately 5A of maximum current on i
 Voltage, current, and temperature limits can be adjusted in software to suit specific applications by modifying ```src/AtverterH_MPPT.cpp```.
 
 ## Web Interface
-(docs/images/interface.jpg)
+<img src="docs/images/interface.jpg" width="450px" alt="Web Interface">
 
 This web interface graphs recent voltage and current readings from the MPPT controller, allowing quick monitoring of system performance.
 
