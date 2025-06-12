@@ -28,6 +28,7 @@
 #define LOW_SIDE_MAX_VOLTAGE 18000
 #define LOW_SIDE_MAX_CURRENT 15000
 #define HIGH_SIDE_MAX_CURRENT 15000
+#define MAX_TEMP 60
 
 #define LOW_VOLTAGE_RESET 9000
 #define HIGH_VOLTAGE_RESET 15000
@@ -64,7 +65,7 @@ void setup(void)
     atverterH.initializeSensors();                        // set filtered sensor values to initial reading
     atverterH.setCurrentShutdown1(LOW_SIDE_MAX_CURRENT);  // set gate shutdown at 6A peak current
     atverterH.setCurrentShutdown2(HIGH_SIDE_MAX_CURRENT); // set gate shutdown at 6A peak current
-    atverterH.setThermalShutdown(60);                     // set gate shutdown at 60°C temperature
+    atverterH.setThermalShutdown(MAX_TEMP);                     // set gate shutdown at 60°C temperature
 
     dutyCycle = 50;
     atverterH.startPWM(dutyCycle);
