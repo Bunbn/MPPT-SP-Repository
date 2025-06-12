@@ -18,7 +18,7 @@ The AtverterH board supports up to 60V, approximately 5A of maximum current on i
 Voltage, current, and temperature limits can be adjusted in software to suit specific applications by modifying ```src/AtverterH_MPPT.cpp```.
 
 ## Web Interface
-<img src="docs/images/interface.jpg" width="450px" alt="Web Interface">
+<img src="docs/images/interface.jpg" width="900px" alt="Web Interface">
 
 This web interface graphs recent voltage and current readings from the MPPT controller, allowing quick monitoring of system performance.
 
